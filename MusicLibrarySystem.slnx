@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="MusicLibrarySystem.Api/MusicLibrarySystem.Api.csproj" />
+  <Project Path="MusicLibrarySystem.Core/MusicLibrarySystem.Core.csproj" />
+  <Project Path="MusicLibrarySystem.Data/MusicLibrarySystem.Data.csproj" />
+</Solution>
