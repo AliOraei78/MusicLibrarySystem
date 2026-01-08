@@ -28,4 +28,39 @@ public class AlbumsController : ControllerBase
         if (album == null) return NotFound();
         return Ok(album);
     }
+
+    [HttpGet("by-artist/{artist}")]
+    public async Task<IActionResult> GetByArtist(string artist)
+    {
+        var albums = await _albumRepository.GetByArtistAsync(artist);
+        return Ok(albums);
+    }
+
+    [HttpGet("first-by-year/{year}")]
+    public async Task<IActionResult> GetFirstByYear(int year)
+    {
+        try
+        {
+            var album = await _albumRepository.GetFirstByYearAsync(year);
+            return Ok(album);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound($"No album was found for the year {year}");
+        }
+    }
+
+    [HttpGet("single/{id}")]
+    public async Task<IActionResult> GetSingle(int id)
+    {
+        try
+        {
+            var album = await _albumRepository.GetSingleByIdAsync(id);
+            return Ok(album);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
 }
