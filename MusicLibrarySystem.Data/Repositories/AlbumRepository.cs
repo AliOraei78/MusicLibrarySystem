@@ -109,4 +109,93 @@ public class AlbumRepository
         return album;
     }
 
+    public async Task<AlbumWithTracksDto?> GetAlbumWithTracksAsync(int albumId)
+    {
+        const string sql = @"
+        SELECT a.""Id"" AS AlbumId, a.""Title"" AS AlbumTitle, a.""Artist"", a.""Year"", a.""Rating"",
+               t.""Id"" AS TrackId, t.""Title"" AS TrackTitle, t.""DurationSeconds""
+        FROM ""Albums"" a
+        LEFT JOIN ""Tracks"" t ON t.""AlbumId"" = a.""Id""
+        WHERE a.""Id"" = @AlbumId";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+
+        var albumDict = new Dictionary<int, AlbumWithTracksDto>();
+
+        var albums = await connection.QueryAsync<AlbumWithTracksDto, Track, AlbumWithTracksDto>(
+            sql,
+            (album, track) =>
+            {
+                if (!albumDict.TryGetValue(album.Id, out var albumEntry))
+                {
+                    albumEntry = album;
+                    albumEntry.Tracks = new List<Track>();
+                    albumDict.Add(albumEntry.Id, albumEntry);
+                }
+
+                if (track != null)
+                {
+                    albumEntry.Tracks.Add(track);
+                }
+
+                return albumEntry;
+            },
+            new { AlbumId = albumId },
+            splitOn: "TrackId"
+        );
+
+        return albums.FirstOrDefault();
+    }
+    public async Task<(IEnumerable<Album> albums, IEnumerable<Track> tracks)> GetAlbumsAndTracksAsync()
+    {
+        const string sql = @"
+        SELECT ""Id"", ""Title"", ""Artist"", ""Year"", ""Rating"" FROM ""Albums"";
+        SELECT ""Id"", ""Title"", ""DurationSeconds"", ""AlbumId"" FROM ""Tracks""";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        using var multi = await connection.QueryMultipleAsync(sql);
+
+        var albums = await multi.ReadAsync<Album>();
+        var tracks = await multi.ReadAsync<Track>();
+
+        return (albums, tracks);
+    }
+
+    /// <summary>
+    /// QueryBuffered – all results are loaded into memory (Dapper default)
+    /// </summary>
+    public async Task<IEnumerable<Album>> GetAllBufferedAsync()
+    {
+        const string sql = @"
+        SELECT ""Id"", ""Title"", ""Artist"", ""Year"", ""Rating"" 
+        FROM ""Albums"" 
+        ORDER BY ""Id""";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        // QueryAsync is buffered by default
+        var albums = await connection.QueryAsync<Album>(sql);
+
+        return albums;
+    }
+
+    /// <summary>
+    /// </summary>
+    public async Task<IEnumerable<Album>> GetAllUnbufferedAsync()
+    {
+        const string sql = @"
+        SELECT ""Id"", ""Title"", ""Artist"", ""Year"", ""Rating"" 
+        FROM ""Albums"" 
+        ORDER BY ""Id""";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        var albumsAsync = connection.QueryUnbufferedAsync<Album>(sql);
+
+        var list = new List<Album>();
+        await foreach (var album in albumsAsync)
+        {
+            list.Add(album);
+        }
+
+        return list;
+    }
 }

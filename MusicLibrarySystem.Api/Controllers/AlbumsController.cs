@@ -63,4 +63,70 @@ public class AlbumsController : ControllerBase
             return NotFound(ex.Message);
         }
     }
+
+    /// <summary>
+    /// Multi-Mapping test: album with its list of tracks
+    /// </summary>
+    [HttpGet("with-tracks/{albumId}")]
+    public async Task<IActionResult> GetAlbumWithTracks(int albumId)
+    {
+        var album = await _albumRepository.GetAlbumWithTracksAsync(albumId);
+
+        if (album == null)
+            return NotFound($"No album found with Id {albumId}");
+
+        return Ok(album);
+    }
+
+    /// <summary>
+    /// QueryMultiple test: retrieve albums and tracks in a single database call
+    /// </summary>
+    [HttpGet("albums-and-tracks")]
+    public async Task<IActionResult> GetAlbumsAndTracks()
+    {
+        var (albums, tracks) = await _albumRepository.GetAlbumsAndTracksAsync();
+
+        var result = new
+        {
+            AlbumsCount = albums.Count(),
+            Albums = albums,
+            TracksCount = tracks.Count(),
+            Tracks = tracks
+        };
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// QueryBuffered test – all data is loaded into memory (default behavior)
+    /// </summary>
+    [HttpGet("buffered")]
+    public async Task<IActionResult> GetBuffered()
+    {
+        var albums = await _albumRepository.GetAllBufferedAsync();
+
+        return Ok(new
+        {
+            Count = albums.Count(),
+            Type = "Buffered (All data loaded in memory)",
+            Albums = albums
+        });
+    }
+
+    /// <summary>
+    /// QueryUnbuffered test – data is read in streaming mode
+    /// </summary>
+    [HttpGet("unbuffered")]
+    public async Task<IActionResult> GetUnbuffered()
+    {
+        var albums = await _albumRepository.GetAllUnbufferedAsync();
+
+        return Ok(new
+        {
+            Count = albums.Count(),
+            Type = "Unbuffered (Streaming - low memory usage)",
+            Albums = albums
+        });
+    }
+
 }
