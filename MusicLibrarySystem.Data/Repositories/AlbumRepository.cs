@@ -1,7 +1,8 @@
 ﻿using Dapper;
-using Npgsql;
-using MusicLibrarySystem.Core.Models;
 using Microsoft.Extensions.Configuration;
+using MusicLibrarySystem.Core.Models;
+using Npgsql;
+using System.Transactions;
 
 namespace MusicLibrarySystem.Data.Repositories;
 
@@ -263,4 +264,125 @@ public class AlbumRepository
         });
     }
 
+    /// <summary>
+    /// Add an album and its tracks in a single simple transaction using Dapper
+    /// </summary>
+    public async Task<int> AddAlbumWithTracksTransactionalAsync(
+        string albumTitle,
+        string artist,
+        int year,
+        decimal rating,
+        List<(string title, int duration)> tracks)
+    {
+        const string insertAlbumSql = @"
+        INSERT INTO ""Albums"" (""Title"", ""Artist"", ""Year"", ""Rating"")
+        VALUES (@Title, @Artist, @Year, @Rating)
+        RETURNING ""Id""";
+
+        const string insertTrackSql = @"
+        INSERT INTO ""Tracks"" (""Title"", ""DurationSeconds"", ""AlbumId"")
+        VALUES (@Title, @DurationSeconds, @AlbumId)";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        using var transaction = connection.BeginTransaction();
+
+        try
+        {
+            // Step 1: Insert the album
+            var albumId = await connection.ExecuteScalarAsync<int>(
+                insertAlbumSql,
+                new
+                {
+                    Title = albumTitle,
+                    Artist = artist,
+                    Year = year,
+                    Rating = rating
+                },
+                transaction);
+
+            if (tracks == null || !tracks.Any())
+                throw new ArgumentException("At least one track must be added.");
+
+            // Step 2: Insert the tracks
+            foreach (var track in tracks)
+            {
+                await connection.ExecuteAsync(
+                    insertTrackSql,
+                    new
+                    {
+                        Title = track.title,
+                        DurationSeconds = track.duration,
+                        AlbumId = albumId
+                    },
+                    transaction);
+            }
+
+            // Commit
+            await transaction.CommitAsync();
+
+            return albumId;
+        }
+        catch
+        {
+            // Rollback on error
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Add an album and its tracks using TransactionScope (distributed transaction)
+    /// </summary>
+    public async Task<int> AddAlbumWithTracksTransactionScopeAsync(
+        string albumTitle,
+        string artist,
+        int year,
+        decimal rating,
+        List<(string title, int duration)> tracks)
+    {
+        using var scope = new TransactionScope(TransactionScopeAsyncFlowOption.Enabled);
+
+        try
+        {
+            const string insertAlbumSql = @"
+            INSERT INTO ""Albums"" (""Title"", ""Artist"", ""Year"", ""Rating"")
+            VALUES (@Title, @Artist, @Year, @Rating)
+            RETURNING ""Id""";
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            var albumId = await connection.ExecuteScalarAsync<int>(insertAlbumSql, new
+            {
+                Title = albumTitle,
+                Artist = artist,
+                Year = year,
+                Rating = rating
+            });
+
+            const string insertTrackSql = @"
+            INSERT INTO ""Tracks"" (""Title"", ""DurationSeconds"", ""AlbumId"")
+            VALUES (@Title, @DurationSeconds, @AlbumId)";
+
+            foreach (var track in tracks)
+            {
+                await connection.ExecuteAsync(insertTrackSql, new
+                {
+                    Title = track.title,
+                    DurationSeconds = track.duration,
+                    AlbumId = albumId
+                });
+            }
+
+            scope.Complete(); // Commit
+            return albumId;
+        }
+        catch
+        {
+            scope.Dispose(); // Rollback
+            throw;
+        }
+    }
 }

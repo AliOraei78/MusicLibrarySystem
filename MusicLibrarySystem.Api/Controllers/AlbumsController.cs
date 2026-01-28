@@ -176,4 +176,41 @@ public class AlbumsController : ControllerBase
         return Ok("Track added via Stored Procedure");
     }
 
+    /// <summary>
+    /// Add an album and its tracks in a simple transaction (Dapper Transaction)
+    /// </summary>
+    [HttpPost("transactional")]
+    public async Task<IActionResult> AddAlbumTransactional([FromBody] AddAlbumWithTracksRequest request)
+    {
+        var tracksForRepo = request.Tracks.Select(t => (t.Title, t.Duration)).ToList();
+
+        var albumId = await _albumRepository.AddAlbumWithTracksTransactionalAsync(
+            request.AlbumTitle,
+            request.Artist,
+            request.Year,
+            request.Rating,
+            tracksForRepo  
+        );
+
+        return CreatedAtAction(nameof(GetById), new { id = albumId }, request);
+    }
+
+    /// <summary>
+    /// Add an album and its tracks using TransactionScope
+    /// </summary>
+    [HttpPost("transaction-scope")]
+    public async Task<IActionResult> AddAlbumTransactionScope([FromBody] AddAlbumWithTracksRequest request)
+    {
+        var tracksForRepo = request.Tracks.Select(t => (t.Title, t.Duration)).ToList();
+
+        var albumId = await _albumRepository.AddAlbumWithTracksTransactionScopeAsync(
+            request.AlbumTitle,
+            request.Artist,
+            request.Year,
+            request.Rating,
+            tracksForRepo
+        );
+
+        return CreatedAtAction(nameof(GetById), new { id = albumId }, request);
+    }
 }

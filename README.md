@@ -51,7 +51,7 @@
 - Use Unbuffered when dealing with millions of rows
 - QueryMultiple reduces network round-trips
 
-## Day 4 - Phase 5: Execute, ExecuteAsync, Stored Procedures
+## Day 4: Execute, ExecuteAsync, Stored Procedures
 
 **Completed Today:**
 - CRUD operations with Execute/ExecuteAsync (Insert/Update/Delete)
@@ -66,3 +66,18 @@
 - Stored Procedures with Dapper using CALL syntax
 - Always use parameters for security
 - Rows affected for checking operation success
+
+## Day 5: Transactions with Dapper
+
+**Completed Today:**
+- Simple Dapper Transaction (BeginTransaction / Commit / Rollback)
+- TransactionScope for distributed transactions
+- Insert album + tracks in one transaction
+- Endpoints for testing transactional operations
+- Full rollback on failure
+
+**Key Learnings:**
+- Dapper Transaction: Manual control with Begin/Commit/Rollback
+- TransactionScope: Automatic distributed transactions
+- Always wrap in try-catch for rollback
+- Perfect for multi-step operations (e.g., order + payment)
