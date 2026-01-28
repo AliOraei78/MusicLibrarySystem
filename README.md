@@ -81,3 +81,18 @@
 - TransactionScope: Automatic distributed transactions
 - Always wrap in try-catch for rollback
 - Perfect for multi-step operations (e.g., order + payment)
+
+## Day 6: Performance Tuning – Caching & Batch Execute
+
+**Completed Today:**
+- Batch Insert/Update/Delete for large datasets (10,000+ records)
+- Manual caching with IMemoryCache
+- Query caching with expiration
+- Performance comparison (cached vs uncached)
+- Endpoints for testing batch and cache
+
+**Key Learnings:**
+- Batch operations are essential for large data (milliseconds vs seconds)
+- Caching reduces database hits for repeated queries
+- Use IMemoryCache for simple in-memory caching
+- Measure performance with Stopwatch for real benchmarks

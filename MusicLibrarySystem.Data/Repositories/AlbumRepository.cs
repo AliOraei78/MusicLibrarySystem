@@ -3,16 +3,19 @@ using Microsoft.Extensions.Configuration;
 using MusicLibrarySystem.Core.Models;
 using Npgsql;
 using System.Transactions;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace MusicLibrarySystem.Data.Repositories;
 
 public class AlbumRepository
 {
     private readonly string _connectionString;
+    private readonly IMemoryCache _cache;
 
-    public AlbumRepository(IConfiguration configuration)
+    public AlbumRepository(IConfiguration configuration, IMemoryCache cache)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+        _cache = cache;
     }
 
     public async Task<IEnumerable<Album>> GetAllAsync()
@@ -385,4 +388,78 @@ public class AlbumRepository
             throw;
         }
     }
+
+    /// <summary>
+    /// Batch insert thousands of tracks with Dapper (optimized for large data)
+    /// </summary>
+    public async Task InsertBatchTracksAsync(List<Track> tracks)
+    {
+        const string sql = @"
+        INSERT INTO ""TestTracks"" (""Title"", ""DurationSeconds"", ""AlbumId"")
+        VALUES (@Title, @DurationSeconds, @AlbumId)";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        await connection.OpenAsync();
+
+        // Batch insert with Dapper (multiple records in a single command)
+        await connection.ExecuteAsync(sql, tracks);
+    }
+
+    /// <summary>
+    /// Batch update with Dapper (updating a large number of records)
+    /// </summary>
+    public async Task UpdateBatchTracksDurationAsync(int minDuration, int newDuration)
+    {
+        const string sql = @"
+        UPDATE ""TestTracks""
+        SET ""DurationSeconds"" = @NewDuration
+        WHERE ""DurationSeconds"" > @MinDuration";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        var rows = await connection.ExecuteAsync(sql, new { NewDuration = newDuration, MinDuration = minDuration });
+
+        Console.WriteLine($"Number of records updated: {rows}");
+    }
+
+    /// <summary>
+    /// Batch delete with Dapper
+    /// </summary>
+    public async Task DeleteBatchOldTracksAsync(int maxDuration)
+    {
+        const string sql = @"
+        DELETE FROM ""TestTracks""
+        WHERE ""DurationSeconds"" < @MaxDuration";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        var rows = await connection.ExecuteAsync(sql, new { MaxDuration = maxDuration });
+
+        Console.WriteLine($"Number of records deleted: {rows}");
+    }
+
+    public async Task<IEnumerable<Album>> GetAllCachedAsync()
+    {
+        const string cacheKey = "AllAlbums";
+
+        // Check cache
+        if (_cache.TryGetValue(cacheKey, out var cachedAlbums) &&
+            cachedAlbums is IEnumerable<Album> nonNullCached)
+        {
+            return nonNullCached;
+        }
+
+        const string sql = "SELECT \"Id\", \"Title\", \"Artist\", \"Year\", \"Rating\" FROM \"Albums\"";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        var albums = await connection.QueryAsync<Album>(sql);
+
+        // albums is always non-null (QueryAsync returns an empty list if there are no results)
+        // but this extra check is added to satisfy the compiler
+        var safeAlbums = albums ?? Enumerable.Empty<Album>();
+
+        _cache.Set(cacheKey, safeAlbums, TimeSpan.FromMinutes(5));
+
+        return safeAlbums;
+    }
+
+
 }

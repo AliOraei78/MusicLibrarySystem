@@ -31,6 +31,8 @@ builder.Services.AddSwaggerGen(c =>
     // c.IncludeXmlComments(xmlPath);
 });
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<AlbumRepository>();
 
 var app = builder.Build();

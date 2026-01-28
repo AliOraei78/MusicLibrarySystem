@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using MusicLibrarySystem.Core.Models;
 using MusicLibrarySystem.Data.Repositories;
+using System.Diagnostics;
 
 namespace MusicLibrarySystem.Api.Controllers;
 
@@ -189,7 +190,7 @@ public class AlbumsController : ControllerBase
             request.Artist,
             request.Year,
             request.Rating,
-            tracksForRepo  
+            tracksForRepo
         );
 
         return CreatedAtAction(nameof(GetById), new { id = albumId }, request);
@@ -212,5 +213,73 @@ public class AlbumsController : ControllerBase
         );
 
         return CreatedAtAction(nameof(GetById), new { id = albumId }, request);
+    }
+
+    /// <summary>
+    /// Batch insert test with 10,000 new tracks (high performance with Dapper)
+    /// </summary>
+    /// <param name="albumId">The ID of the album to which the tracks will be added</param>
+    /// <returns>The number of records inserted and the execution time</returns>
+    [HttpPost("batch-insert-test/{albumId}")]
+    public async Task<IActionResult> BatchInsertTest(int albumId)
+    {
+        if (albumId <= 0)
+            return BadRequest("AlbumId must be greater than 0");
+
+        var stopwatch = Stopwatch.StartNew();
+
+        var tracks = new List<Track>();
+        for (int i = 1; i <= 10000; i++)
+        {
+            tracks.Add(new Track
+            {
+                Title = $"Track Batch {i} - {DateTime.UtcNow:HH:mm:ss}",
+                DurationSeconds = 180 + (i % 120),
+                AlbumId = albumId
+            });
+        }
+
+        try
+        {
+            await _albumRepository.InsertBatchTracksAsync(tracks);
+
+            stopwatch.Stop();
+
+            return Ok(new
+            {
+                Message = "Batch insert successful",
+                RecordsInserted = tracks.Count,
+                ExecutionTimeMs = stopwatch.ElapsedMilliseconds,
+                TotalTime = $"{stopwatch.Elapsed.TotalSeconds:F2} seconds"
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, $"Error during batch insert: {ex.Message}");
+        }
+    }
+
+    [HttpGet("cached")]
+    public async Task<IActionResult> GetCached()
+    {
+        var albums = await _albumRepository.GetAllCachedAsync();
+        return Ok(albums);
+    }
+
+    [HttpGet("performance-test")]
+    public async Task<IActionResult> PerformanceTest()
+    {
+        var stopwatch = Stopwatch.StartNew();
+
+        var albums = await _albumRepository.GetAllCachedAsync();
+
+        stopwatch.Stop();
+
+        return Ok(new
+        {
+            Count = albums.Count(),
+            ExecutionTimeMs = stopwatch.ElapsedMilliseconds,
+            FromCache = stopwatch.ElapsedMilliseconds < 10 
+        });
     }
 }
