@@ -198,4 +198,69 @@ public class AlbumRepository
 
         return list;
     }
+
+    /// <summary>
+    /// Insert a new album using ExecuteAsync
+    /// </summary>
+    public async Task<int> InsertAlbumAsync(Album album)
+    {
+        const string sql = @"
+        INSERT INTO ""Albums"" (""Title"", ""Artist"", ""Year"", ""Rating"")
+        VALUES (@Title, @Artist, @Year, @Rating)
+        RETURNING ""Id""";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        var newId = await connection.ExecuteScalarAsync<int>(sql, album);
+
+        return newId;
+    }
+
+    /// <summary>
+    /// Update an album using ExecuteAsync
+    /// </summary>
+    public async Task<int> UpdateAlbumAsync(Album album)
+    {
+        const string sql = @"
+        UPDATE ""Albums""
+        SET ""Title"" = @Title,
+            ""Artist"" = @Artist,
+            ""Year"" = @Year,
+            ""Rating"" = @Rating
+        WHERE ""Id"" = @Id";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        var rowsAffected = await connection.ExecuteAsync(sql, album);
+
+        return rowsAffected;
+    }
+
+    /// <summary>
+    /// Delete an album using ExecuteAsync
+    /// </summary>
+    public async Task<int> DeleteAlbumAsync(int id)
+    {
+        const string sql = @"DELETE FROM ""Albums"" WHERE ""Id"" = @Id";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        var rowsAffected = await connection.ExecuteAsync(sql, new { Id = id });
+
+        return rowsAffected;
+    }
+
+    /// <summary>
+    /// Call a stored procedure using Execute
+    /// </summary>
+    public async Task AddTrackViaStoredProcedureAsync(string title, int durationSeconds, int albumId)
+    {
+        const string sql = "CALL add_track_and_update_album(@Title, @DurationSeconds, @AlbumId)";
+
+        using var connection = new NpgsqlConnection(_connectionString);
+        await connection.ExecuteAsync(sql, new
+        {
+            Title = title,
+            DurationSeconds = durationSeconds,
+            AlbumId = albumId
+        });
+    }
+
 }

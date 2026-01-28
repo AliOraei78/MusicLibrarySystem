@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using MusicLibrarySystem.Core.Models;
 using MusicLibrarySystem.Data.Repositories;
 
 namespace MusicLibrarySystem.Api.Controllers;
@@ -127,6 +128,52 @@ public class AlbumsController : ControllerBase
             Type = "Unbuffered (Streaming - low memory usage)",
             Albums = albums
         });
+    }
+
+    /// <summary>
+    /// Insert a new album using ExecuteAsync
+    /// </summary>
+    [HttpPost]
+    public async Task<IActionResult> CreateAlbum([FromBody] Album album)
+    {
+        var newId = await _albumRepository.InsertAlbumAsync(album);
+        return CreatedAtAction(nameof(GetById), new { id = newId }, album);
+    }
+
+    /// <summary>
+    /// Update an album using ExecuteAsync
+    /// </summary>
+    [HttpPut("{id}")]
+    public async Task<IActionResult> UpdateAlbum(int id, [FromBody] Album album)
+    {
+        album.Id = id;  // Ensure the correct Id
+        var rows = await _albumRepository.UpdateAlbumAsync(album);
+        return rows > 0 ? NoContent() : NotFound();
+    }
+
+    /// <summary>
+    /// Delete an album using ExecuteAsync
+    /// </summary>
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> DeleteAlbum(int id)
+    {
+        var rows = await _albumRepository.DeleteAlbumAsync(id);
+        return rows > 0 ? NoContent() : NotFound();
+    }
+
+    /// <summary>
+    /// Add a track via Stored Procedure
+    /// </summary>
+    [HttpPost("tracks/sp")]
+    public async Task<IActionResult> AddTrackViaSP([FromBody] AddTrackRequest request)
+    {
+        await _albumRepository.AddTrackViaStoredProcedureAsync(
+            request.Title,
+            request.DurationSeconds,
+            request.AlbumId
+        );
+
+        return Ok("Track added via Stored Procedure");
     }
 
 }

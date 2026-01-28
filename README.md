@@ -50,3 +50,19 @@
 - Unbuffered: Low memory for large datasets, streaming processing
 - Use Unbuffered when dealing with millions of rows
 - QueryMultiple reduces network round-trips
+
+## Day 4 - Phase 5: Execute, ExecuteAsync, Stored Procedures
+
+**Completed Today:**
+- CRUD operations with Execute/ExecuteAsync (Insert/Update/Delete)
+- Returning new ID with ExecuteScalarAsync
+- Calling Stored Procedure with parameters
+- Endpoints for full CRUD and SP testing
+- Rows affected handling for success/failure
+
+**Key Learnings:**
+- Execute/ExecuteAsync for non-query operations (INSERT/UPDATE/DELETE)
+- ExecuteScalarAsync for returning single value (e.g., new ID)
+- Stored Procedures with Dapper using CALL syntax
+- Always use parameters for security
+- Rows affected for checking operation success
