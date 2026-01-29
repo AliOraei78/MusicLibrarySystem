@@ -1,9 +1,12 @@
 ﻿using Dapper;
+using Dapper.AmbientContext;
+using Dapper.Contrib.Extensions;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
 using MusicLibrarySystem.Core.Models;
+using MusicLibrarySystem.Data.Ambient;
 using Npgsql;
 using System.Transactions;
-using Microsoft.Extensions.Caching.Memory;
 
 namespace MusicLibrarySystem.Data.Repositories;
 
@@ -11,11 +14,20 @@ public class AlbumRepository
 {
     private readonly string _connectionString;
     private readonly IMemoryCache _cache;
+    private readonly DapperAmbientContext _ambientContext;
 
-    public AlbumRepository(IConfiguration configuration, IMemoryCache cache)
+    public AlbumRepository(IConfiguration configuration, IMemoryCache cache, DapperAmbientContext ambientContext)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection")!;
         _cache = cache;
+        _ambientContext = ambientContext;
+    }
+
+    public async Task<IEnumerable<Album>> GetAllWithAmbientAsync()
+    {
+        const string sql = "SELECT \"Id\", \"Title\", \"Artist\", \"Year\", \"Rating\" FROM \"Albums\"";
+
+        return await _ambientContext.Connection.QueryAsync<Album>(sql);
     }
 
     public async Task<IEnumerable<Album>> GetAllAsync()
@@ -461,5 +473,49 @@ public class AlbumRepository
         return safeAlbums;
     }
 
+    /// <summary>
+    /// Get all albums using Auto CRUD
+    /// </summary>
+    public async Task<IEnumerable<Album>> GetAllAutoAsync()
+    {
+        using var connection = new NpgsqlConnection(_connectionString);
+        return await connection.GetAllAsync<Album>();
+    }
 
+    /// <summary>
+    /// Get album by Id using Auto CRUD
+    /// </summary>
+    public async Task<Album?> GetByIdAutoAsync(int id)
+    {
+        using var connection = new NpgsqlConnection(_connectionString);
+        return await connection.GetAsync<Album>(id);
+    }
+
+    /// <summary>
+    /// Insert a new album using Auto CRUD
+    /// </summary>
+    public async Task<int> InsertAlbumAutoAsync(Album album)
+    {
+        using var connection = new NpgsqlConnection(_connectionString);
+        return await connection.InsertAsync(album); // Returns the new Id
+    }
+
+    /// <summary>
+    /// Update an album using Auto CRUD
+    /// </summary>
+    public async Task<bool> UpdateAlbumAutoAsync(Album album)
+    {
+        using var connection = new NpgsqlConnection(_connectionString);
+        return await connection.UpdateAsync(album);
+    }
+
+    /// <summary>
+    /// Delete an album using Auto CRUD
+    /// </summary>
+    public async Task<bool> DeleteAlbumAutoAsync(int id)
+    {
+        using var connection = new NpgsqlConnection(_connectionString);
+        var album = new Album { Id = id };
+        return await connection.DeleteAsync(album);
+    }
 }

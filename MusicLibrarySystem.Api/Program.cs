@@ -1,4 +1,5 @@
 using Microsoft.OpenApi;
+using MusicLibrarySystem.Data.Ambient;
 using MusicLibrarySystem.Data.Repositories;
 using System.Text.Json.Serialization;
 
@@ -34,6 +35,16 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddMemoryCache();
 
 builder.Services.AddScoped<AlbumRepository>();
+builder.Services.AddScoped<ReportRepository>();
+
+builder.Services.AddScoped<DapperAmbientContext>(sp =>
+{
+    var config = sp.GetRequiredService<IConfiguration>();
+    var connString = config.GetConnectionString("DefaultConnection")!;
+    return new DapperAmbientContext(connString);
+});
+
+builder.Services.AddScoped<ReportConnectionProvider>();
 
 var app = builder.Build();
 

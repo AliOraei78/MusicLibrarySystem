@@ -10,10 +10,12 @@ namespace MusicLibrarySystem.Api.Controllers;
 public class AlbumsController : ControllerBase
 {
     private readonly AlbumRepository _albumRepository;
+    private readonly ReportRepository _reportRepository;
 
-    public AlbumsController(AlbumRepository albumRepository)
+    public AlbumsController(AlbumRepository albumRepository, ReportRepository reportRepository)
     {
         _albumRepository = albumRepository;
+        _reportRepository = reportRepository;
     }
 
     [HttpGet]
@@ -279,7 +281,69 @@ public class AlbumsController : ControllerBase
         {
             Count = albums.Count(),
             ExecutionTimeMs = stopwatch.ElapsedMilliseconds,
-            FromCache = stopwatch.ElapsedMilliseconds < 10 
+            FromCache = stopwatch.ElapsedMilliseconds < 10
         });
+    }
+
+    [HttpGet("auto-all")]
+    public async Task<IActionResult> GetAllAuto()
+    {
+        var albums = await _albumRepository.GetAllAutoAsync();
+        return Ok(albums);
+    }
+
+    [HttpGet("auto/{id}")]
+    public async Task<IActionResult> GetByIdAuto(int id)
+    {
+        var album = await _albumRepository.GetByIdAutoAsync(id);
+        if (album == null) return NotFound();
+        return Ok(album);
+    }
+
+    [HttpPost("auto")]
+    public async Task<IActionResult> CreateAuto([FromBody] Album album)
+    {
+        var newId = await _albumRepository.InsertAlbumAutoAsync(album);
+        return CreatedAtAction(nameof(GetByIdAuto), new { id = newId }, album);
+    }
+
+    [HttpPut("auto/{id}")]
+    public async Task<IActionResult> UpdateAuto(int id, [FromBody] Album album)
+    {
+        album.Id = id;
+        var success = await _albumRepository.UpdateAlbumAutoAsync(album);
+        return success ? NoContent() : NotFound();
+    }
+
+    [HttpDelete("auto/{id}")]
+    public async Task<IActionResult> DeleteAuto(int id)
+    {
+        var success = await _albumRepository.DeleteAlbumAutoAsync(id);
+        return success ? NoContent() : NotFound();
+    }
+
+    /// <summary>
+    /// Ambient Context test: get the list of albums without manual connection management
+    /// Advantages: connection is reused, cleaner code, async/await-safe
+    /// </summary>
+    [HttpGet("ambient-all")]
+    public async Task<IActionResult> GetAllWithAmbient()
+    {
+        var albums = await _albumRepository.GetAllWithAmbientAsync();
+
+        return Ok(new
+        {
+            Message = "Ambient Context test succeeded",
+            Count = albums.Count(),
+            Albums = albums,
+            Note = "There is no 'using connection' inside the repository method — the connection was reused from the Ambient Context"
+        });
+    }
+
+    [HttpGet("multi-db-test")]
+    public async Task<IActionResult> MultiDbTest()
+    {
+        var totalTracks = await _reportRepository.GetTotalTracksCountAsync();
+        return Ok(new { TotalTracks = totalTracks });
     }
 }

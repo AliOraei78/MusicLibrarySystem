@@ -96,3 +96,55 @@
 - Caching reduces database hits for repeated queries
 - Use IMemoryCache for simple in-memory caching
 - Measure performance with Stopwatch for real benchmarks
+
+## Day 7: Dapper.Contrib – Auto CRUD
+
+**Completed Today:**
+- Installed Dapper.Contrib
+- Used [Table] and [Key] attributes for automatic mapping
+- Implemented Auto CRUD: GetAll, GetById, Insert, Update, Delete
+- No manual SQL needed for basic operations
+- Endpoints for testing Auto CRUD
+- Compared with raw Dapper (less code, same performance)
+
+**Key Learnings:**
+- Dapper.Contrib simplifies CRUD with attributes
+- [Key] for primary key, [Table] for table name
+- Insert returns new ID automatically
+- Update/Delete need entity with Id set
+- Perfect for simple entities (combine with raw Dapper for complex queries)
+
+Note: Below query is required in order to test day 7 changes:
+-- Rename columns to lowercase so Dapper.Contrib can find them
+ALTER TABLE "Albums" RENAME COLUMN "Id" TO id;
+ALTER TABLE "Albums" RENAME COLUMN "Title" TO title;
+ALTER TABLE "Albums" RENAME COLUMN "Artist" TO artist;
+ALTER TABLE "Albums" RENAME COLUMN "Year" TO year;
+ALTER TABLE "Albums" RENAME COLUMN "Rating" TO rating;
+
+-- Do the same for Tracks if you want Auto-CRUD there too
+ALTER TABLE "Tracks" RENAME COLUMN "Id" TO id;
+ALTER TABLE "Tracks" RENAME COLUMN "Title" TO title;
+ALTER TABLE "Tracks" RENAME COLUMN "DurationSeconds" TO duration_seconds;
+ALTER TABLE "Tracks" RENAME COLUMN "AlbumId" TO album_id;
+
+## Day 8: Dapper.AmbientContext & Multi-Connection
+
+**Completed Today:**
+- Implemented Ambient Connection Context (no manual connection per method)
+- Scoped connection lifetime in ASP.NET Core
+- Multi-database support with separate connection providers
+- Safe async/await usage with Ambient context
+- Endpoints for testing multi-db queries
+
+**Key Learnings:**
+- AmbientContext eliminates repetitive connection code
+- Scoped services for connection lifetime management
+- Multi-connection for reporting, sharding, or legacy DBs
+- No connection leaks with proper Dispose
+- Thread-safe in async environments
+
+**Next (Day 9):**
+- Advanced Mapping & Custom TypeHandlers
+
+Connection management mastered — scalable & clean! 🔗
