@@ -1,8 +1,10 @@
+using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using MusicLibrarySystem.Data.Ambient;
 using MusicLibrarySystem.Data.Context;
 using MusicLibrarySystem.Data.Repositories;
+using MusicLibrarySystem.Data.TypeHandlers;
 using System;
 using System.Text.Json.Serialization;
 
@@ -62,6 +64,8 @@ builder.Services.AddScoped<IDapperContext, DapperContext>();
 builder.Services.AddScoped<AlbumHybridRepository>();
 
 builder.Services.AddScoped<ReportConnectionProvider>();
+
+SqlMapper.AddTypeHandler(new GenreTypeHandler());
 
 var app = builder.Build();
 

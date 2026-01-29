@@ -162,3 +162,19 @@ Note: Back up "MusicLibraryDb" database and restore as "MusicLibraryReportsDb" i
 - Use Dapper for reports, Batch, raw SQL
 - Use EF for validation, relations, migrations
 - No conflict — both can use same DB
+
+## Day 10: Advanced Mapping & Custom TypeHandlers
+
+**Completed Today:**
+- Custom DTO with calculated fields (TrackCount, AverageDuration)
+- Advanced Multi-Mapping with aggregate functions
+- Custom TypeHandler for Enum and JSONB
+- Global registration of TypeHandlers
+- Endpoint for testing advanced mapping
+
+**Key Learnings:**
+- Multi-Mapping can include aggregates (COUNT, AVG)
+- Custom TypeHandler for non-standard types (Enum → string, JSONB)
+- SqlMapper.AddTypeHandler for global registration
+- SplitOn for complex object graphs
+- DTO projection reduces over-fetching

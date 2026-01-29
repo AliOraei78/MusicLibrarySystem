@@ -370,4 +370,12 @@ public class AlbumsController : ControllerBase
         return Ok(report);
     }
 
+    [HttpGet("advanced-detail/{albumId}")]
+    public async Task<IActionResult> GetAdvancedDetail(int albumId)
+    {
+        var detail = await _albumRepository.GetAlbumDetailCustomAsync(albumId);
+        if (detail == null) return NotFound();
+        return Ok(detail);
+    }
+
 }

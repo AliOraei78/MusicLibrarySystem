@@ -518,4 +518,51 @@ public class AlbumRepository
         var album = new Album { Id = id };
         return await connection.DeleteAsync(album);
     }
+
+    public async Task<AlbumDetailDto?> GetAlbumDetailCustomAsync(int albumId)
+    {
+        const string sql = @"
+            SELECT 
+                a.""Id"" AS AlbumId, 
+                a.""Title"" AS Title, 
+                a.""Artist"" AS Artist, 
+                a.""Year"" AS Year, 
+                a.""Rating"" AS Rating,
+                t.""Id"" AS TrackId,
+                t.""Title"" AS TrackTitle,
+                t.""DurationSeconds"" AS TrackDuration
+            FROM ""Albums"" a
+            LEFT JOIN ""Tracks"" t ON t.""AlbumId"" = a.""Id""
+            WHERE a.""Id"" = @AlbumId
+            ORDER BY t.""Id""";
+
+        using var conn = new NpgsqlConnection(_connectionString);
+
+        var lookup = new Dictionary<int, AlbumDetailDto>();
+
+        await conn.QueryAsync<AlbumDetailDto, TrackDto, AlbumDetailDto>(
+            sql,
+            (album, track) =>
+            {
+                if (!lookup.TryGetValue(album.AlbumId, out var dto))
+                {
+                    dto = album;
+                    dto.Tracks = new List<TrackDto>();
+                    lookup.Add(dto.AlbumId, dto);
+                }
+
+                if (track != null)
+                {
+                    dto.Tracks.Add(track);
+                }
+
+                return dto;
+            },
+            new { AlbumId = albumId },
+            splitOn: "TrackId"
+        );
+
+        lookup.TryGetValue(albumId, out var result);
+        return result;
+    }
 }
