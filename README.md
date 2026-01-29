@@ -144,7 +144,21 @@ ALTER TABLE "Tracks" RENAME COLUMN "AlbumId" TO album_id;
 - No connection leaks with proper Dispose
 - Thread-safe in async environments
 
-**Next (Day 9):**
-- Advanced Mapping & Custom TypeHandlers
+Note: Back up "MusicLibraryDb" database and restore as "MusicLibraryReportsDb" in order to test "multi-db-test" endpoint.
 
-Connection management mastered — scalable & clean! 🔗
+## Day 9: Hybrid Approach – Dapper + EF Core
+
+**Completed Today:**
+- Registered both EF Core and Dapper in DI
+- Created Hybrid Repository using EF for complex relations and Dapper for fast reports
+- Implemented EF method with Include for 1-N loading
+- Implemented Dapper method for aggregate report (COUNT, AVG)
+- Endpoints for testing hybrid approach
+- Compared use cases: EF for ORM full, Dapper for performance-critical
+
+**Key Learnings:**
+- Hybrid = EF for write/complex + Dapper for read-heavy/custom
+- Separate contexts/repositories for clean separation
+- Use Dapper for reports, Batch, raw SQL
+- Use EF for validation, relations, migrations
+- No conflict — both can use same DB

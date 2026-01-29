@@ -1,6 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi;
 using MusicLibrarySystem.Data.Ambient;
+using MusicLibrarySystem.Data.Context;
 using MusicLibrarySystem.Data.Repositories;
+using System;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,7 +11,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+{
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.MaxDepth = 64;
+});
 
 // Add Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -43,6 +50,16 @@ builder.Services.AddScoped<DapperAmbientContext>(sp =>
     var connString = config.GetConnectionString("DefaultConnection")!;
     return new DapperAmbientContext(connString);
 });
+
+// EF Core (for full ORM capabilities)
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Raw Dapper (for fast queries)
+builder.Services.AddScoped<IDapperContext, DapperContext>();
+
+// Hybrid or separate repository
+builder.Services.AddScoped<AlbumHybridRepository>();
 
 builder.Services.AddScoped<ReportConnectionProvider>();
 

@@ -11,11 +11,13 @@ public class AlbumsController : ControllerBase
 {
     private readonly AlbumRepository _albumRepository;
     private readonly ReportRepository _reportRepository;
+    private readonly AlbumHybridRepository _albumHybridRepository;
 
-    public AlbumsController(AlbumRepository albumRepository, ReportRepository reportRepository)
+    public AlbumsController(AlbumRepository albumRepository, ReportRepository reportRepository, AlbumHybridRepository albumHybridRepository)
     {
         _albumRepository = albumRepository;
         _reportRepository = reportRepository;
+        _albumHybridRepository = albumHybridRepository;
     }
 
     [HttpGet]
@@ -346,4 +348,26 @@ public class AlbumsController : ControllerBase
         var totalTracks = await _reportRepository.GetTotalTracksCountAsync();
         return Ok(new { TotalTracks = totalTracks });
     }
+
+    /// <summary>
+    /// Hybrid: EF Core for loading album + tracks (complex relationships)
+    /// </summary>
+    [HttpGet("hybrid-ef/{id}")]
+    public async Task<IActionResult> GetAlbumHybridEf(int id)
+    {
+        var album = await _albumHybridRepository.GetAlbumWithTracksEfAsync(id);
+        if (album == null) return NotFound();
+        return Ok(album);
+    }
+
+    /// <summary>
+    /// Hybrid: Dapper for fast reporting (Top albums by track count and average duration)
+    /// </summary>
+    [HttpGet("hybrid-report")]
+    public async Task<IActionResult> GetTopAlbumsReport(int topN = 10)
+    {
+        var report = await _albumHybridRepository.GetTopAlbumsReportDapperAsync(topN);
+        return Ok(report);
+    }
+
 }

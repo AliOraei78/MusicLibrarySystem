@@ -16,6 +16,8 @@ public class Album
 
     public decimal Rating { get; set; }
 
+    public List<Track> Tracks { get; set; } = new();
+
     // If you want a computed property (read-only, calculated by the database)
     [Computed]
     public int TrackCount { get; set; }

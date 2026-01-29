@@ -13,4 +13,6 @@ public class Track
     public int DurationSeconds { get; set; }
 
     public int AlbumId { get; set; }
+
+    public Album? Album { get; set; }
 }
