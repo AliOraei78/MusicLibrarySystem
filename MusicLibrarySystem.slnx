@@ -5,4 +5,5 @@
   <Project Path="MusicLibrarySystem.Api/MusicLibrarySystem.Api.csproj" />
   <Project Path="MusicLibrarySystem.Core/MusicLibrarySystem.Core.csproj" />
   <Project Path="MusicLibrarySystem.Data/MusicLibrarySystem.Data.csproj" />
+  <Project Path="MusicLibrarySystem.Tests/MusicLibrarySystem.Tests.csproj" Id="629c039f-6ed6-4767-98eb-210ff3e45538" />
 </Solution>

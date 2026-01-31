@@ -121,6 +121,7 @@ ALTER TABLE "Albums" RENAME COLUMN "Title" TO title;
 ALTER TABLE "Albums" RENAME COLUMN "Artist" TO artist;
 ALTER TABLE "Albums" RENAME COLUMN "Year" TO year;
 ALTER TABLE "Albums" RENAME COLUMN "Rating" TO rating;
+ALTER TABLE "Albums" RENAME COLUMN "TrackCount" TO trackcount;
 
 -- Do the same for Tracks if you want Auto-CRUD there too
 ALTER TABLE "Tracks" RENAME COLUMN "Id" TO id;
@@ -178,3 +179,19 @@ Note: Back up "MusicLibraryDb" database and restore as "MusicLibraryReportsDb" i
 - SqlMapper.AddTypeHandler for global registration
 - SplitOn for complex object graphs
 - DTO projection reduces over-fetching
+
+## Day 11 - Phase 5: Testing with Dapper
+
+**Completed Today:**
+- Unit Tests with Mock IDbConnection (Moq)
+- Integration Tests with InMemory or real DB
+- Tested GetAll, Insert, Batch Insert
+- Mocked connection for isolation
+- Real DB tests for validation
+
+**Key Learnings:**
+- Mock IDbConnection for fast unit tests
+- InMemory or SQLite for integration
+- Test both read and write operations
+- Verify rows affected and data integrity
+- Use xUnit + Moq + Npgsql for Dapper testing
