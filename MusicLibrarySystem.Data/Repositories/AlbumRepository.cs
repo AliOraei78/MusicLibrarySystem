@@ -14,9 +14,9 @@ public class AlbumRepository
 {
     private readonly string _connectionString;
     private readonly IMemoryCache _cache;
-    private readonly DapperAmbientContext _ambientContext;
+    private readonly DapperAmbientContext? _ambientContext;
 
-    public AlbumRepository(IConfiguration configuration, IMemoryCache cache, DapperAmbientContext ambientContext)
+    public AlbumRepository(IConfiguration configuration, IMemoryCache cache, DapperAmbientContext? ambientContext)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection")!;
         _cache = cache;
@@ -25,6 +25,9 @@ public class AlbumRepository
 
     public async Task<IEnumerable<Album>> GetAllWithAmbientAsync()
     {
+        if (_ambientContext == null)
+            throw new InvalidOperationException("Ambient context is required for this method");
+
         const string sql = "SELECT \"Id\", \"Title\", \"Artist\", \"Year\", \"Rating\" FROM \"Albums\"";
 
         return await _ambientContext.Connection.QueryAsync<Album>(sql);

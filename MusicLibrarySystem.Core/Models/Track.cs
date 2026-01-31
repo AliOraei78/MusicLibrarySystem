@@ -14,5 +14,6 @@ public class Track
 
     public int AlbumId { get; set; }
 
+    //[Write(false)] //to test Dapper.Contrib
     public Album? Album { get; set; }
 }

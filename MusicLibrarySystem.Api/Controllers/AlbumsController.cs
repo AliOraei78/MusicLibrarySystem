@@ -302,13 +302,6 @@ public class AlbumsController : ControllerBase
         return Ok(album);
     }
 
-    [HttpPost("auto")]
-    public async Task<IActionResult> CreateAuto([FromBody] Album album)
-    {
-        var newId = await _albumRepository.InsertAlbumAutoAsync(album);
-        return CreatedAtAction(nameof(GetByIdAuto), new { id = newId }, album);
-    }
-
     [HttpPut("auto/{id}")]
     public async Task<IActionResult> UpdateAuto(int id, [FromBody] Album album)
     {

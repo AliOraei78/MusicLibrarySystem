@@ -16,6 +16,7 @@ public class Album
 
     public decimal Rating { get; set; }
 
+    //[Write(false)] //to test Dapper.Contrib
     public List<Track> Tracks { get; set; } = new();
 
     // If you want a computed property (read-only, calculated by the database)
