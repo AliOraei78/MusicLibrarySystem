@@ -195,3 +195,18 @@ Note: Back up "MusicLibraryDb" database and restore as "MusicLibraryReportsDb" i
 - Test both read and write operations
 - Verify rows affected and data integrity
 - Use xUnit + Moq + Npgsql for Dapper testing
+
+## Day 12 - Phase 5: Error Handling, Logging
+
+**Completed Today:**
+- Custom exceptions for Dapper/Npgsql errors
+- Advanced try-catch with specific Npgsql SqlState handling
+
+**Production Strategy Summary:**
+- Always use parameterized queries
+- Use Ambient Context or Scoped connection
+- Log slow queries (> 500ms) and errors
+- Use Polly for retry on transient errors
+- Monitor connection pool with Npgsql logging
+- Use Dapper for read-heavy, EF Core for write/complex
+- Add health checks for connection

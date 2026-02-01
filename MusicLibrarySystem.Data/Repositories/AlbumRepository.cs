@@ -3,6 +3,8 @@ using Dapper.AmbientContext;
 using Dapper.Contrib.Extensions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using MusicLibrarySystem.Core.Exceptions;
 using MusicLibrarySystem.Core.Models;
 using MusicLibrarySystem.Data.Ambient;
 using Npgsql;
@@ -15,12 +17,14 @@ public class AlbumRepository
     private readonly string _connectionString;
     private readonly IMemoryCache _cache;
     private readonly DapperAmbientContext? _ambientContext;
+    private readonly ILogger<AlbumRepository>? _logger;
 
-    public AlbumRepository(IConfiguration configuration, IMemoryCache cache, DapperAmbientContext? ambientContext)
+    public AlbumRepository(IConfiguration configuration, IMemoryCache cache, DapperAmbientContext? ambientContext, ILogger<AlbumRepository>? logger)
     {
         _connectionString = configuration.GetConnectionString("DefaultConnection")!;
         _cache = cache;
         _ambientContext = ambientContext;
+        _logger = logger;
     }
 
     public async Task<IEnumerable<Album>> GetAllWithAmbientAsync()
@@ -48,9 +52,9 @@ public class AlbumRepository
         const string sql = "SELECT \"Id\", \"Title\", \"Artist\", \"Year\", \"Rating\" FROM \"Albums\" WHERE \"Id\" = @Id";
 
         using var connection = new NpgsqlConnection(_connectionString);
-        var album = await connection.QueryFirstOrDefaultAsync<Album>(sql, new { Id = id });
+            var album = await connection.QueryFirstOrDefaultAsync<Album>(sql, new { Id = id });
 
-        return album;
+            return album;
     }
 
     // QueryAsync – returns a list (multiple records)
@@ -229,9 +233,29 @@ public class AlbumRepository
         RETURNING ""Id""";
 
         using var connection = new NpgsqlConnection(_connectionString);
-        var newId = await connection.ExecuteScalarAsync<int>(sql, album);
 
-        return newId;
+        try
+        {
+            var newId = await connection.ExecuteScalarAsync<int>(sql, album);
+            return newId;
+        }
+        catch (NpgsqlException ex)
+        {
+            switch (ex.SqlState)
+            {
+                case "23503": // Foreign Key Violation
+                    throw new ForeignKeyViolationException("Foreign key violation occurred", ex);
+                case "23505": // Unique Constraint Violation
+                    throw new UniqueConstraintViolationException("Duplicate key value violates unique constraint", ex);
+                default:
+                    throw new DapperDatabaseException($"Database error: {ex.Message}", ex);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Unexpected error while inserting album");
+            throw new DapperDatabaseException("An unexpected error occurred", ex);
+        }
     }
 
     /// <summary>

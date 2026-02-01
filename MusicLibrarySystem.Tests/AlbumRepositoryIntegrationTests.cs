@@ -1,6 +1,7 @@
 ﻿using Dapper;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Moq;
 using MusicLibrarySystem.Core.Models;
 using MusicLibrarySystem.Data.Repositories;
@@ -13,7 +14,7 @@ using Xunit;
 
 namespace MusicLibrarySystem.Tests.Repositories
 {
-    public class AlbumRepositoryTests : IAsyncLifetime
+    public class AlbumRepositoryIntegrationTests : IAsyncLifetime
     {
         // ────────────────────────────────────────────────
         // CHANGE THESE VALUES to match your local PostgreSQL
@@ -22,15 +23,15 @@ namespace MusicLibrarySystem.Tests.Repositories
             "Host=localhost;" +
             "Port=5432;" +
             "Database=MusicLibraryDb;" +           // ← create this database first!
-            "Username=postgres;" +             // ← your username
-            "Password=password123";     // ← your password
+            "Username=postgres;" +                 // ← your username
+            "Password=password123";                // ← your password (change to your real password)
 
         private readonly Mock<IConfiguration> _configMock = new();
         private readonly Mock<IMemoryCache> _cacheMock = new();
 
-        public AlbumRepositoryTests()
+        public AlbumRepositoryIntegrationTests()
         {
-            // Mock configuration so repository reads the real local connection string
+            // Mock configuration to return the real PostgreSQL connection string
             _configMock
                 .Setup(c => c["ConnectionStrings:DefaultConnection"])
                 .Returns(ConnectionString);
@@ -45,8 +46,7 @@ namespace MusicLibrarySystem.Tests.Repositories
 
         public async Task InitializeAsync()
         {
-            // Optional: Ensure clean state before tests
-            // You can drop/create tables here if you want full isolation
+            // Ensure clean state before tests by dropping and recreating the table
             await using var conn = new NpgsqlConnection(ConnectionString);
             await conn.OpenAsync();
 
@@ -75,8 +75,8 @@ namespace MusicLibrarySystem.Tests.Repositories
             return new AlbumRepository(
                 _configMock.Object,
                 _cacheMock.Object,
-                ambientContext: null,   // assuming ambient is optional/skipped
-                logger: null
+                ambientContext: null,  // skipping ambient context
+                logger : null
             );
         }
 
@@ -174,6 +174,69 @@ namespace MusicLibrarySystem.Tests.Repositories
 
             Assert.NotNull(result);
             Assert.Empty(result);
+        }
+
+        [Fact]
+        public async Task InsertAlbumAutoAsync_InsertsAlbumAndReturnsId()
+        {
+            var newAlbum = new Album
+            {
+                Title = "New Test Album",
+                Artist = "Test Artist",
+                Year = 2024,
+                Rating = 4.5m
+            };
+
+            var sut = CreateSut();
+
+            var insertedId = await sut.InsertAlbumAutoAsync(newAlbum);
+
+            Assert.True(insertedId > 0);
+
+            var retrieved = await sut.GetByIdAsync(insertedId);
+            Assert.NotNull(retrieved);
+            Assert.Equal("New Test Album", retrieved.Title);
+        }
+
+        [Fact]
+        public async Task UpdateAlbumAutoAsync_UpdatesExistingAlbum()
+        {
+            await SeedAlbumsAsync(
+                new { Title = "Original Title", Artist = "Original Artist", Year = 2000, Rating = 3.5m }
+            );
+
+            var sut = CreateSut();
+
+            var albumToUpdate = await sut.GetByIdAsync(1);
+            Assert.NotNull(albumToUpdate);
+
+            albumToUpdate.Title = "Updated Title";
+            albumToUpdate.Rating = 4.5m;
+
+            var updated = await sut.UpdateAlbumAutoAsync(albumToUpdate);
+
+            Assert.True(updated);
+
+            var retrieved = await sut.GetByIdAsync(1);
+            Assert.Equal("Updated Title", retrieved.Title);
+            Assert.Equal(4.5m, retrieved.Rating);
+        }
+
+        [Fact]
+        public async Task DeleteAlbumAutoAsync_DeletesExistingAlbum()
+        {
+            await SeedAlbumsAsync(
+                new { Title = "To Delete", Artist = "Delete Artist", Year = 1999, Rating = 2.5m }
+            );
+
+            var sut = CreateSut();
+
+            var deleted = await sut.DeleteAlbumAutoAsync(1);
+
+            Assert.True(deleted);
+
+            var retrieved = await sut.GetByIdAsync(1);
+            Assert.Null(retrieved);
         }
     }
 }
