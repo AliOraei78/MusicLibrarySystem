@@ -201,6 +201,7 @@ Note: Back up "MusicLibraryDb" database and restore as "MusicLibraryReportsDb" i
 **Completed Today:**
 - Custom exceptions for Dapper/Npgsql errors
 - Advanced try-catch with specific Npgsql SqlState handling
+- Advanced logging with Serilog for queries and errors
 
 **Production Strategy Summary:**
 - Always use parameterized queries

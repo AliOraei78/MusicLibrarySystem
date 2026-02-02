@@ -284,10 +284,31 @@ public class AlbumRepository
     {
         const string sql = @"DELETE FROM ""Albums"" WHERE ""Id"" = @Id";
 
-        using var connection = new NpgsqlConnection(_connectionString);
-        var rowsAffected = await connection.ExecuteAsync(sql, new { Id = id });
+        await using var connection = new NpgsqlConnection(_connectionString);
 
-        return rowsAffected;
+        try
+        {
+            await connection.OpenAsync();
+
+            _logger?.LogInformation("Attempting to delete album {AlbumId}", id);
+
+            int rowsAffected = await connection.ExecuteAsync(sql, new { Id = id });
+
+            if (rowsAffected == 0)
+            {
+                _logger?.LogWarning("No album found to delete with Id: {AlbumId}", id);
+                return 0;
+            }
+
+            _logger?.LogInformation("Successfully deleted album {AlbumId}. Rows affected: {Rows}", id, rowsAffected);
+
+            return rowsAffected;
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Failed to delete album {AlbumId}", id);
+            throw;
+        }
     }
 
     /// <summary>

@@ -67,7 +67,13 @@ builder.Services.AddScoped<AlbumHybridRepository>();
 
 builder.Services.AddScoped<ReportConnectionProvider>();
 
-builder.Services.AddLogging();
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .WriteTo.File("logs/dapper-app-.log", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 
 SqlMapper.AddTypeHandler(new GenreTypeHandler());
 
